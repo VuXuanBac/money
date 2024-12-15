@@ -1,0 +1,23 @@
+REPORT.id=ID
+REPORT.timestamp=Thời gian
+REPORT.amount=Giá
+REPORT.message=Ghi chú
+REPORT.currency=Đơn vị
+REPORT.payer=Người trả
+REPORT.receiver=Người nhận
+REPORT.source=Ví thanh toán
+REPORT.destination=Ví nhận
+REPORT.category=Phân loại
+
+EVENT.id=ID
+EVENT.timestamp=Thời gian
+EVENT.amount=Giá
+EVENT.message=Ghi chú
+EVENT.currency=Đơn vị
+EVENT.payer=Người trả
+EVENT.receiver=Người nhận
+EVENT.people=Những người chia sẻ
+EVENT.shares=Tỉ lệ chia sẻ
+EVENT.tag=Nhãn
+
+IMPORT_ERROR_FOLDER=.

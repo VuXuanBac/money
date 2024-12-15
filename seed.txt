@@ -1,0 +1,22 @@
+create account me
+create account crush
+create account mom
+create account A
+create account B
+create wallet cash -a 1
+create wallet shopee -a 1
+create wallet vcb -a 1
+create wallet mb -a 2
+create wallet A -a 4
+create wallet B -a 5
+create wallet mom -a 3
+create wallet crush -a 2
+create tag food
+create tag clothes
+create tag book
+create tag travel
+create tag nov24
+create resource -l https://monogr.ph/xxxxyyyyzzzz -s 1000 -c vnd --scope tx personal
+create resource -l /path/to/sharing/notes -s 1000 -c vnd --scope sharing sharing
+import -r personal
+import -r sharing
