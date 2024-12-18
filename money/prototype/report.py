@@ -50,9 +50,7 @@ class ReportPrototype(Prototype):
                 "categories",
                 "wallets",
                 "currencies",
-                relates="accounts",
-                start="start_time",
-                end="end_time",
+                rename=dict(relates="accounts", start="start_time", end="end_time"),
             )
             use_filters = filters
             report_name = args.name
@@ -93,7 +91,6 @@ class ReportPrototype(Prototype):
             return response
 
         fieldnames = app.config.get(CONFIG_REPORT_FIELDNAMES) or dict(args.rename or {})
-        print(fieldnames)
         return response.concat(
             AppHelper.export_to_file(
                 app,

@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from cmdapp.core import Response
 from cmdapp.utils import URI, Hash, Terminal, Platform
-from cmdapp.parser import COLUMN_ID, COLUMN_DELETE
+from cmdapp.parser import COLUMN_ID, COLUMN_DELETE, COLUMN_CREATE, COLUMN_UPDATE
 from cmdapp.database import SQLCondition, SQLOperators
 from cmdapp.base import Alias, BasePrototype
 from cmdapp.render.table import Tabling
@@ -12,6 +12,12 @@ from ..constants.var import *
 from ..notes import *
 
 from .app import MoneyApp
+
+NOTE_ALLOW_FIELDS = set(
+    list(TABLE_TRANSACTION.columns)
+    + list(TABLE_SHARING.columns)
+    + list(TABLE_ORDER.columns)
+).difference([COLUMN_ID, COLUMN_DELETE, COLUMN_UPDATE, COLUMN_CREATE, "tx"])
 
 
 class AppHelper:
@@ -223,12 +229,8 @@ class NoteHelper:
         return new_data
 
     def sanitize_transaction(aliases: Alias, note: dict):
-        note["payer"] = aliases.resolve(
-            TABLE_WALLET.name, note.get("payer") or note.get("from", None)
-        )
-        note["receiver"] = aliases.resolve(
-            TABLE_WALLET.name, note.get("receiver") or note.get("to", None)
-        )
+        note["payer"] = aliases.resolve(TABLE_WALLET.name, note.get("payer"))
+        note["receiver"] = aliases.resolve(TABLE_WALLET.name, note.get("receiver"))
         note["category"] = aliases.resolve(TABLE_TAG.name, note.get("category"))
         sanitized_note: dict = TABLE_TRANSACTION.sanitize_data(note)
         if not (sanitized_note.get("payer") or sanitized_note.get("receiver")):
@@ -249,7 +251,7 @@ class NoteHelper:
         return sanitized_note
 
     def sanitize_sharing(aliases: Alias, note: dict):
-        shares = note.pop("shares", "")
+        shares = note.get("shares", "")
         if not isinstance(shares, (list, tuple)):
             items = re.findall(SHARE_NOTE_PATTERN, str(shares))
             people, shares = [], []
@@ -274,20 +276,22 @@ class NoteHelper:
         scope: str = None,
         scale: int = None,
         currency: str = None,
+        rename: dict[str, str] = None,
     ):
         result = []
         error_with_indices = []
         for index, note in enumerate(note_entries):
             try:
-                transaction_data = NoteHelper.sanitize_transaction(aliases, note)
+                _note = Hash.filter(note, *NOTE_ALLOW_FIELDS, rename=rename or {})
+                transaction_data = NoteHelper.sanitize_transaction(aliases, _note)
                 if scale:
                     transaction_data["amount"] *= scale
                 if currency:
                     transaction_data["currency"] = currency
                 if scope == SCOPE_ORDER:
-                    scope_data = {scope: NoteHelper.sanitize_order(aliases, note)}
+                    scope_data = {scope: NoteHelper.sanitize_order(aliases, _note)}
                 elif scope == SCOPE_SHARING:
-                    scope_data = {scope: NoteHelper.sanitize_sharing(aliases, note)}
+                    scope_data = {scope: NoteHelper.sanitize_sharing(aliases, _note)}
                 else:
                     scope_data = {}
 

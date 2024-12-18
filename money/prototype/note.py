@@ -94,6 +94,7 @@ class NotePrototype(Prototype):
                 ).concat(BasePrototype.print_database_errors(app))
 
         aliases = AppHelper.transaction_aliases(app)
+        field_to_name = app.config.get(CONFIG_NOTE_FIELDNAMES, default={})
         # parse notes to get data to save
         sanitized_data, error_with_indices = NoteHelper.parse_notes(
             aliases,
@@ -101,6 +102,7 @@ class NotePrototype(Prototype):
             scope=config["scope"],
             scale=config["scale"],
             currency=config["currency"],
+            rename={v: k for k, v in field_to_name.items()},
         )
 
         # print invalid records

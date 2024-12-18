@@ -1,3 +1,22 @@
+NOTE.payer=Người trả
+NOTE.receiver=Người nhận
+NOTE.category=Phân loại
+NOTE.amount=Giá
+NOTE.currency=Đơn vị
+NOTE.timestamp=Thời gian
+NOTE.message=Ghi chú
+
+NOTE.tag=Nhãn
+
+NOTE.people=Những người chia sẻ
+NOTE.shares=Tỉ lệ chia sẻ
+
+NOTE.items=Sản phẩm
+NOTE.shop=Cửa hàng
+NOTE.platform=Nền tảng
+NOTE.review=Đánh giá
+NOTE.complete=Thời gian nhận
+
 REPORT.id=ID
 REPORT.timestamp=Thời gian
 REPORT.amount=Giá

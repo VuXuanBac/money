@@ -28,7 +28,7 @@ import os
 from .constants.var import ENV_DATABASE_PATH, ENV_CONFIG_PATH
 
 DATABASE_FILE_PATH = os.environ.get(ENV_DATABASE_PATH, "money.db")
-CONFIG_PATH = os.environ.get(ENV_CONFIG_PATH, "money_config.txt")
+CONFIG_PATH = os.environ.get(ENV_CONFIG_PATH, "config.txt")
 
 database, good = prepare_database(DATABASE_FILE_PATH)
 
