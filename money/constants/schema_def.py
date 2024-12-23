@@ -119,10 +119,8 @@ TABLE_NOTE_RESOURCE = TableMeta(
     columns={
         "name": "* (*str): unique name for reference",
         "link": "l, url (*str): link to fetch new notes",
-        "option": "(json): options to parse notes: `{'format': '.csv'}`",
+        "option": "c, config (json[str]): options to parse notes like note format, scale level, default values for missing fields: `{'format': '.csv', 'scale': 1000, 'payer': 'me'}`",
         "scope": f"t, type (str: {json.dumps(IMPORT_SCOPES)} = tx): what data is inside each note: pure transaction, sharing or order",
-        "currency": "c (str): default currency unit for importing",
-        "scale": "s (float): default scale level for transaction value",
         "last_import": "(datetime): last imported timestamp",
         "last_record": "(json): last record from last importing, used to find new notes for next importing",
     },

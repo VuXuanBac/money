@@ -16,7 +16,7 @@ class NotesParser:
                 continue
             cells = row.find_all("td")
 
-            cells_text = [cell.get_text("\n", strip=True) for cell in cells]
+            cells_text = [cell.get_text("\n", strip=True) or None for cell in cells]
 
             table_data.append(dict(zip(headers_text, cells_text)))
 
