@@ -5,6 +5,7 @@ from cmdapp.core import Prototype, Response, as_command
 from cmdapp.parser import COLUMN_ID
 from cmdapp.database import SQLCondition
 from cmdapp.base import BasePrototype
+from cmdapp.utils import Hash
 
 from .helper import AppHelper, NoteHelper, MoneyApp
 from ..constants.var import *
@@ -23,13 +24,12 @@ class NotePrototype(Prototype):
         ),
         arguments={
             "resource": "r (str[telex]): reference a saved resource by id or name",
-            "format": "f (str): [without resource, for local import] file format to parse local notes file",
-            "save": "l, log (bool = 1): set to not save unimported notes (due to errors) into a local file (named as imported time)",
             "force": "f (bool = 0): force to import all notes from resource and by pass all duplicating checks",
+            "reserved": "s, save (str = .): folder to store notes that are not imported successfully (due to errors)",
         }
         | {
             k: TABLE_RESOURCE[k].metadata | {"required": False}
-            for k in ["scope", "currency", "scale", "link"]
+            for k in ["scope", "link", "option"]
         },
     )
     def do_import(app: MoneyApp, args):
@@ -44,10 +44,10 @@ class NotePrototype(Prototype):
             )
         # get configuration for importing: link, currency, scale,...
         if args.resource:
-            config = AppHelper.get_record_by_name_or_id(
+            metadata = AppHelper.get_record_by_name_or_id(
                 app.database[TABLE_RESOURCE.name], args.resource
             )
-            if not config:
+            if not metadata:
                 return response.on("error").message(
                     "found",
                     stype="error",
@@ -57,18 +57,20 @@ class NotePrototype(Prototype):
                     items=args.resource,
                 )
         else:
-            config = dict(
-                link=args.link, last_record=None, option=dict(format=args.format)
-            )
-        config.setdefault("currency", args.currency)
-        config.setdefault("scale", args.scale)
-        config.setdefault("scope", args.scope)
+            metadata = {}
+        resource_link, note_scope, last_import_record, options = Hash.get(
+            metadata,
+            link=args.link,
+            scope=args.scope,
+            last_record=None,
+            option=dict(args.option or {}),
+        )
 
         # get new notes
         new_data = NoteHelper.parse_from_url(
-            config["link"],
-            None if args.force else config["last_record"],
-            (config.get("option") or {}).get("format"),
+            resource_link,
+            None if args.force else last_import_record,
+            (options or {}).get("format"),
         )
         count = len(new_data)
         if not count:
@@ -80,7 +82,7 @@ class NotePrototype(Prototype):
         if args.resource:
             updated_value = dict(last_import=datetime.now(), last_record=new_data[-1])
             success = app.database[TABLE_RESOURCE.name].update(
-                updated_value, SQLCondition.with_id(config[COLUMN_ID])
+                updated_value, SQLCondition.with_id(metadata[COLUMN_ID])
             )
             if not success:
                 response.on("error").message(
@@ -89,7 +91,7 @@ class NotePrototype(Prototype):
                     action="SAVE",
                     what=TABLE_RESOURCE.human_name(),
                     argument=COLUMN_ID,
-                    value=config[COLUMN_ID],
+                    value=metadata[COLUMN_ID],
                     result=updated_value,
                 ).concat(BasePrototype.print_database_errors(app))
 
@@ -99,17 +101,15 @@ class NotePrototype(Prototype):
         sanitized_data, error_with_indices = NoteHelper.parse_notes(
             aliases,
             new_data,
-            scope=config["scope"],
-            scale=config["scale"],
-            currency=config["currency"],
+            scope=note_scope,
+            options=options,
             rename={v: k for k, v in field_to_name.items()},
         )
 
         # print invalid records
         invalid_data = []
         error_log_file = os.path.join(
-            app.config.get(CONFIG_IMPORT_ERROR_FOLDER),
-            f'{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.json',
+            args.reserved, f'{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.json'
         )
         response.on("error")
         for index, error in error_with_indices:
@@ -129,7 +129,7 @@ class NotePrototype(Prototype):
         if not count:
             return (
                 response.json(invalid_data, path=error_log_file)
-                if args.save
+                if args.reserved
                 else response
             )
 
@@ -141,7 +141,7 @@ class NotePrototype(Prototype):
             what="new notes",
             result="Prepare to import following notes:",
         )
-        response.csv(sanitized_data, separator=" | ", indent=1, allow_unicode=True)
+        response.json(sanitized_data, separator=" | ", indent=1, allow_unicode=True)
 
         # save into database
         error_indices = AppHelper.save_transactions_in_scope(app, sanitized_data)
@@ -156,7 +156,7 @@ class NotePrototype(Prototype):
         else:
             response.on("error").message("action", style="error", **message_kwargs)
             # save all invalid data: parse error, save error,...
-            if args.save:
+            if args.reserved:
                 invalid_data.extend(
                     [
                         sanitized_data[index] | {"error": "save error"}

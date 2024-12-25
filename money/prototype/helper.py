@@ -261,7 +261,7 @@ class NoteHelper:
         else:
             people = note.get("people", [])
         note["tag"] = aliases.resolve(TABLE_TAG.name, note.get("tag"))
-        note["people"] = aliases.resolve(TABLE_ACCOUNT.name, people)
+        note["people"] = aliases.resolve(TABLE_ACCOUNT.name, people) or []
         note["shares"] = [float(sh) for sh in shares] + [1.0] * (
             len(note["people"]) - len(shares)  # empty array if negative
         )
@@ -274,20 +274,19 @@ class NoteHelper:
         aliases: Alias,
         note_entries: list[dict],
         scope: str = None,
-        scale: int = None,
-        currency: str = None,
+        options: dict = None,
         rename: dict[str, str] = None,
     ):
         result = []
         error_with_indices = []
+        options = options or {}
+        scale = float(options.pop("scale", 1.0))
         for index, note in enumerate(note_entries):
             try:
                 _note = Hash.filter(note, *NOTE_ALLOW_FIELDS, rename=rename or {})
+                _note = Hash.merge(_note, options)
                 transaction_data = NoteHelper.sanitize_transaction(aliases, _note)
-                if scale:
-                    transaction_data["amount"] *= scale
-                if currency:
-                    transaction_data["currency"] = currency
+                transaction_data["amount"] *= scale
                 if scope == SCOPE_ORDER:
                     scope_data = {scope: NoteHelper.sanitize_order(aliases, _note)}
                 elif scope == SCOPE_SHARING:

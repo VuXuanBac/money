@@ -16,7 +16,7 @@ create tag clothes
 create tag book
 create tag travel
 create tag nov24
-create resource -l https://monogr.ph/xxxxyyyyzzzz -s 1000 -c vnd --scope tx personal
-create resource -l /path/to/sharing/notes -s 1000 -c vnd --scope sharing sharing
+create resource -l https://monogr.ph/xxxxyyyyzzzz -c scale=1000 currency=vnd --scope tx personal
+create resource -l /path/to/sharing/notes -c "shares=A:1, B:1.5" --scope sharing sharing
 import -r personal
 import -r sharing
