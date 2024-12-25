@@ -219,6 +219,17 @@ class AppHelper:
 
 
 class NoteHelper:
+    def eval_amount(input: str):
+        expression = input.replace("^", "**").replace(",", "")
+        if re.fullmatch(r"[\d\.\+\-*/%()]+", expression):
+            try:
+                return eval(expression)
+            except:
+                pass
+        raise ValueError(
+            f"Invalid 'amount' [{input}], expect a float or a math expression"
+        )
+
     def parse_from_url(url, last_record=None, format=None):
         path, is_remote = URI.resolve(url)
         if not is_remote:
@@ -232,6 +243,8 @@ class NoteHelper:
         note["payer"] = aliases.resolve(TABLE_WALLET.name, note.get("payer"))
         note["receiver"] = aliases.resolve(TABLE_WALLET.name, note.get("receiver"))
         note["category"] = aliases.resolve(TABLE_TAG.name, note.get("category"))
+        note["amount"] = NoteHelper.eval_amount(note["amount"])
+
         sanitized_note: dict = TABLE_TRANSACTION.sanitize_data(note)
         if not (sanitized_note.get("payer") or sanitized_note.get("receiver")):
             raise ValueError("Missing both payer and receiver")
