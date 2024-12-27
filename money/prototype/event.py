@@ -2,25 +2,26 @@ from cmdapp.core import Prototype, Response, as_command
 
 from ..constants.schema import *
 from ..constants.var import CONFIG_EVENT_FIELDNAMES
-from ..notes import *
 
-from .helper import AppHelper, EventHelper, MoneyApp
+from ..helper import AppHelper, EventHelper
+from ..app import MoneyApp
 
 
 class EventPrototype(Prototype):
     @as_command(
         description="Close an event (labeld with a tag) and summarize sharing transactions within that event",
+        epilog="You can use this command to review a saved event (with `--event` option) or create new event (with `--tag` and `--currency` options)",
         arguments={
             "event": "o, open (str[telex]): review saved event",
             "tag": TABLE_EVENT["tag"].metadata
             | {"dtype": "str", "metavar": "tag", "required": False},
             "currency": TABLE_EVENT["currency"].metadata | {"required": False},
             "rates": "[currency=rate] r (json[float]): conversion rates from other currencies to chosen currency.\nExample: `usd=23500` means convert 1 usd to 23500 chosen currency",
-            "ignore": "(bool = 0): set to ignore transactions with unexpected currencies\n(not provide conversion rates), otherwise raise error",
             "name": "n (str[telex]): name (title) of the report",
             "export": "[file] p (str): save sharing transactions into invoice file",
             "format": "f (str = html): invoice file format",
             "rename": "[name=new_name] q (json[str]): rename invoice fields. The orders are important",
+            "ignore": "(bool = 0): set to ignore transactions with unexpected currencies\n(not provide conversion rates), otherwise raise error",
             "save": "(bool = 0): set to create event for this summarization",
         },
     )
@@ -29,10 +30,10 @@ class EventPrototype(Prototype):
         if not (args.event or (args.tag and args.currency)):
             return response.on("error").message(
                 "action",
-                stype="error",
+                style="error",
                 action="SUMMARIZE",
                 what="event",
-                reason="missing both 'event' and 'tag'",
+                reason="missing both 'event' and ('tag' and 'currency')",
             )
         if args.event:
             event_attributes = AppHelper.get_record_by_name_or_id(
@@ -41,7 +42,7 @@ class EventPrototype(Prototype):
             if not event_attributes:
                 return response.on("error").message(
                     "found",
-                    stype="error",
+                    style="error",
                     negative=True,
                     what=TABLE_EVENT.human_name(),
                     field="alias",

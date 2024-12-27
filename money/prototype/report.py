@@ -5,12 +5,14 @@ from cmdapp.parser import COLUMN_ID
 from ..constants.schema import *
 from ..constants.var import CONFIG_REPORT_FIELDNAMES
 
-from .helper import AppHelper, ReportHelper, MoneyApp
+from ..helper import AppHelper, ReportHelper
+from ..app import MoneyApp
 
 
 class ReportPrototype(Prototype):
     @as_command(
         description="Report for transactions filtered by some criteria",
+        epilog="You can use this command to review a saved report (with `--report` option) or create new report (with all filter options)",
         arguments={
             "report": "o, open (str[telex]): review saved report",
             "start": "[timestamp] s (datetime): filter by datetime that not earlier than provided timestamp",
@@ -19,9 +21,9 @@ class ReportPrototype(Prototype):
             "wallets": "[wallets] w (array[telex]): filter by one or many wallets",
             "relates": "[accounts] a, account (array[telex]): filter by one or many related accounts",
             "currencies": "c (list[str]): filter by one or many currencies",
-            "name": "n (str[telex]): name (title) of the report",
+            "name": "n (str[telex]): name (title) of the report. required for saving",
             "export": "[file] p (str): save transactions into invoice file",
-            "format": "f (str = html): invoice file format",
+            "format": "f (str = html): export invoice file format",
             "rename": "[name=new_name] q (json[telex]): rename invoice fields. The orders are important",
             "save": "(bool = 0): set to save report into database",
         },
@@ -35,7 +37,7 @@ class ReportPrototype(Prototype):
             if not report_attributes:
                 return response.on("error").message(
                     "found",
-                    stype="error",
+                    style="error",
                     negative=True,
                     what=TABLE_REPORT.human_name(),
                     field="alias",
@@ -53,7 +55,7 @@ class ReportPrototype(Prototype):
                 rename=dict(relates="accounts", start="start_time", end="end_time"),
             )
             use_filters = filters
-            report_name = args.name
+            report_name = args.name or ""
         try:
             transactions = AppHelper.filter_transactions(app, **use_filters)
         except Exception as error:
@@ -77,14 +79,25 @@ class ReportPrototype(Prototype):
         response.table(report_data)
 
         # create new report
-        if not args.report and args.save:
-            report_attributes = {
-                "name": report_name,
-                "filters": filters,
-                "txs": [tx[COLUMN_ID] for tx in transactions],
-                "data": report_data,
-            }
-            response.concat(AppHelper.save_record(app, TABLE_REPORT, report_attributes))
+        if args.save and not args.report:
+            if not args.name:
+                response.message(
+                    "argument",
+                    style="error",
+                    argument="name",
+                    status="missing",
+                    result="Abort saving report",
+                )
+            else:
+                report_attributes = {
+                    "name": report_name,
+                    "filters": filters,
+                    "txs": [tx[COLUMN_ID] for tx in transactions],
+                    "data": report_data,
+                }
+                response.concat(
+                    AppHelper.save_record(app, TABLE_REPORT, report_attributes)
+                )
 
         # export invoices
         if not args.export:

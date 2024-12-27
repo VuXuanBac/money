@@ -1,15 +1,12 @@
-import os
-from datetime import datetime
-
 from cmdapp.core import Prototype, Response, as_command
 from cmdapp.parser import COLUMN_ID
-from cmdapp.database import SQLCondition
-from cmdapp.base import BasePrototype
 from cmdapp.utils import Hash
 
-from .helper import AppHelper, NoteHelper, MoneyApp
 from ..constants.var import *
 from ..constants.schema import *
+
+from ..helper import AppHelper, NoteHelper
+from ..app import MoneyApp
 
 
 class NotePrototype(Prototype):
@@ -19,7 +16,7 @@ class NotePrototype(Prototype):
             [
                 "By default, last imported record from note resource will be saved, regardless of importing outcome.",
                 "It is used as a mark to not import duplicated records",
-                "Use `--force` to ignore this check on this importing",
+                "Use `--force` to ignore this check on importing",
             ]
         ),
         arguments={
@@ -37,7 +34,7 @@ class NotePrototype(Prototype):
         if not (args.resource or args.link):
             return response.on("error").message(
                 "action",
-                stype="error",
+                style="error",
                 action="IMPORT",
                 what="notes",
                 reason="missing both 'resource' and 'link'",
@@ -50,7 +47,7 @@ class NotePrototype(Prototype):
             if not metadata:
                 return response.on("error").message(
                     "found",
-                    stype="error",
+                    style="error",
                     negative=True,
                     what=TABLE_RESOURCE.human_name(),
                     field="alias",
@@ -80,20 +77,9 @@ class NotePrototype(Prototype):
 
         # save last record to note resource database
         if args.resource:
-            updated_value = dict(last_import=datetime.now(), last_record=new_data[-1])
-            success = app.database[TABLE_RESOURCE.name].update(
-                updated_value, SQLCondition.with_id(metadata[COLUMN_ID])
+            response.concat(
+                NoteHelper.update_last_record(app, metadata[COLUMN_ID], new_data[-1])
             )
-            if not success:
-                response.on("error").message(
-                    "action",
-                    style="warning",
-                    action="SAVE",
-                    what=TABLE_RESOURCE.human_name(),
-                    argument=COLUMN_ID,
-                    value=metadata[COLUMN_ID],
-                    result=updated_value,
-                ).concat(BasePrototype.print_database_errors(app))
 
         aliases = AppHelper.transaction_aliases(app)
         field_to_name = app.config.get(CONFIG_NOTE_FIELDNAMES, default={})
@@ -108,9 +94,7 @@ class NotePrototype(Prototype):
 
         # print invalid records
         invalid_data = []
-        error_log_file = os.path.join(
-            args.reserved, f'{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}.json'
-        )
+        error_log_file = NoteHelper.get_error_log_file(args.reserved)
         response.on("error")
         for index, error in error_with_indices:
             response.message(
@@ -164,4 +148,4 @@ class NotePrototype(Prototype):
                     ]
                 )
                 response.json(invalid_data, path=error_log_file)
-        return response.concat(BasePrototype.print_database_errors(app))
+        return response.concat(AppHelper.get_database_errors(app))
