@@ -54,6 +54,7 @@ else:
             NotePrototype(category="Expense Commands"),
             ReportPrototype(category="Expense Commands"),
             EventPrototype(category="Expense Commands"),
+            LiquidityPrototype(category="Expense Commands"),
         ],
         app_class=MoneyApp,
         builtin_command_category="Builtin Commands",

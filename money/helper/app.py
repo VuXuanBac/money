@@ -1,7 +1,7 @@
 from cmdapp.core import Response
 from cmdapp.utils import Platform
-from cmdapp.parser import COLUMN_ID, COLUMN_DELETE
-from cmdapp.database import SQLCondition, SQLOperators
+from cmdapp.parser import COLUMN_ID, COLUMN_CREATE, COLUMN_DELETE
+from cmdapp.database import SQLCondition, SQLOperators, SQLOrderByDirection, Table
 from cmdapp.base import Alias, BasePrototype
 
 from ..constants.schema import *
@@ -12,7 +12,7 @@ from ..app import MoneyApp
 
 
 class AppHelper:
-    def get_record_by_name_or_id(table, value: str, column: str = "name"):
+    def get_record_by_name_or_id(table: Table, value: str, column: str = "name"):
         record = table.query(
             condition=SQLCondition(COLUMN_ID, SQLOperators.EQUAL, value).OR(
                 column, SQLOperators.EQUAL, value
@@ -210,3 +210,41 @@ class AppHelper:
         """
 
         return app.database.query(sql)
+
+    def get_wallet_balance_from_transactions(
+        app: MoneyApp, wallet_id: int, currency: str = None, created_later=None
+    ):
+        sql = f"""
+        SELECT 
+            currency,
+            (SUM(CASE WHEN receiver = :wallet_id THEN amount ELSE 0 END) - 
+            SUM(CASE WHEN payer = :wallet_id THEN amount ELSE 0 END)) AS balance
+        FROM {TABLE_TRANSACTION.name}
+        WHERE 1
+        """
+        data = dict(wallet_id=wallet_id)
+        if currency:
+            sql += f" AND currency = :currency"
+            data |= dict(currency=currency)
+        if created_later:
+            sql += f" AND {COLUMN_CREATE} > :timestamp"
+            data |= dict(timestamp=created_later)
+
+        sql += " GROUP BY currency"
+        result = app.database.query(sql, data)
+
+        balance_by_currency = {}
+        for group in result:
+            balance_by_currency[group["currency"]] = group["balance"]
+        return balance_by_currency
+
+    def get_last_saved_liquidity(app: MoneyApp, wallet_id: int, currency: str = None):
+        condition = SQLCondition.with_id(wallet_id)
+        if currency:
+            condition.AND("currency", SQLOperators.EQUAL, currency)
+        liquidity = app.database[TABLE_LIQUIDITY.name].query(
+            condition=condition,
+            order_by=[(COLUMN_CREATE, SQLOrderByDirection.DESC)],
+            page_size=1,
+        )
+        return liquidity[0] if liquidity else {}
