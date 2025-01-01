@@ -45,7 +45,7 @@ if not good:
     )
 else:
     from .prototype import *
-    from .prototype.app import MoneyApp
+    from .app import MoneyApp
     from .constants.template import RESPONSE_FORMATTER
 
     start_app(
