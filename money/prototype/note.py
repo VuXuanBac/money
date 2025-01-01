@@ -63,15 +63,16 @@ class NotePrototype(Prototype):
             link=args.link,
             scope=args.scope,
             last_record=None,
-            option=dict(args.option or {}),
+            option=None,
         )
+        options = (options or {}) | dict(args.option or {})
 
         # get new notes
         try:
             new_data = NoteHelper.parse_from_url(
                 resource_link,
                 None if args.force else last_import_record,
-                (options or {}).get("format"),
+                options.get("format"),
             )
         except Exception as err:
             return response.message("exception", message=err, argument=resource_link)
