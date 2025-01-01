@@ -23,7 +23,7 @@ class NotePrototype(Prototype):
             ]
         ),
         arguments={
-            "resource": "r (str[telex]): reference a saved resource by id or name",
+            "resource": "r (str): reference a saved resource by id or name",
             "force": "f (bool = 0): force to import all notes from resource and by pass all duplicating checks",
             "reserved": "s, save (str = .): folder to store notes that are not imported successfully (due to errors)",
         }
@@ -67,11 +67,14 @@ class NotePrototype(Prototype):
         )
 
         # get new notes
-        new_data = NoteHelper.parse_from_url(
-            resource_link,
-            None if args.force else last_import_record,
-            (options or {}).get("format"),
-        )
+        try:
+            new_data = NoteHelper.parse_from_url(
+                resource_link,
+                None if args.force else last_import_record,
+                (options or {}).get("format"),
+            )
+        except Exception as err:
+            return response.message("exception", message=err, argument=resource_link)
         count = len(new_data)
         if not count:
             return response.message(
