@@ -212,7 +212,11 @@ class AppHelper:
         return app.database.query(sql)
 
     def get_wallet_balance_from_transactions(
-        app: MoneyApp, wallet_id: int, currency: str = None, created_later=None
+        app: MoneyApp,
+        wallet_id: int,
+        currency: str = None,
+        happen_after=None,
+        happen_before=None,
     ):
         sql = f"""
         SELECT 
@@ -226,9 +230,12 @@ class AppHelper:
         if currency:
             sql += f" AND currency = :currency"
             data |= dict(currency=currency)
-        if created_later:
-            sql += f" AND {COLUMN_CREATE} > :timestamp"
-            data |= dict(timestamp=created_later)
+        if happen_after:
+            sql += f" AND timestamp > :later"
+            data |= dict(later=happen_after)
+        if happen_before:
+            sql += f" AND timestamp < :before"
+            data |= dict(before=happen_before)
 
         sql += " GROUP BY currency"
         result = app.database.query(sql, data)
@@ -239,7 +246,7 @@ class AppHelper:
         return balance_by_currency
 
     def get_last_saved_liquidity(app: MoneyApp, wallet_id: int, currency: str = None):
-        condition = SQLCondition.with_id(wallet_id)
+        condition = SQLCondition("wallet", SQLOperators.EQUAL, wallet_id)
         if currency:
             condition.AND("currency", SQLOperators.EQUAL, currency)
         liquidity = app.database[TABLE_LIQUIDITY.name].query(

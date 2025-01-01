@@ -7,6 +7,8 @@ SHARE_NOTE_PATTERN = r"(\w+)\s*(?:[:=]([\d\.]+))?"
 
 CONVERSION_RATE_PATTERN = r"^\s*(\w+)\s*[=:]\s*([\d\.]+)\s*$"
 
+DISPLAY_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 BILL_PERSON = "individual"
 BILL_PAID = "paid"
 BILL_RECEIVED = "received"
