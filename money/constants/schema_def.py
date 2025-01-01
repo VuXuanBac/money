@@ -28,8 +28,10 @@ TABLE_LIQUIDITY = TableMeta(
     plural="liquidities",
     columns={
         "wallet": "[wallet_id] w (*int): wallet",
+        "currency": "(*str): currency unit",
         "balance": "v, value (*float): balance (amount of money)",
         "calculate": "(float): calculated balance based on saved transactions",
+        "timestamp": "t, at (*datetime): timestamp to summarize",
     },
     meta_columns=["created_at", "deleted_at"],
 )
