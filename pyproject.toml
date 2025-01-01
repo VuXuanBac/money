@@ -10,6 +10,8 @@ python = "^3.10"
 cmdapp = {path = "../cmdapp", develop = true}
 beautifulsoup4 = "^4.12.3"
 requests = "^2.32.3"
+pycryptodome = "^3.21.0"
+argon2-cffi = "^23.1.0"
 
 
 [build-system]
